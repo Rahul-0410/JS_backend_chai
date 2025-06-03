@@ -1,0 +1,36 @@
+<!-- setInterval  -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>chai aur code</h1>
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
+</body>
+<script>
+//      setInterval(()=>{
+//     console.log("hitesh");
+    
+//    },1000);
+ const sayDate=(str)=>{
+    // console.log("Rahul", Date.now());
+    console.log(str, Date.now());
+ }
+ let id;
+ document.querySelector('#start').addEventListener('click',()=>{
+     id=setInterval(sayDate,2000,"hi");
+ })
+ document.querySelector('#stop').addEventListener('click',()=>{
+     clearInterval(id);
+     console.log("stopped");
+     
+ })
+
+   
+  
+</script>
+</html>

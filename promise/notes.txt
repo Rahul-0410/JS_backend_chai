@@ -1,0 +1,5 @@
+the promise object represents the eventful completion or failure of an async opearation and its resulting value.
+3 startes of promise: pending, fulfilled and rejected
+
+
+

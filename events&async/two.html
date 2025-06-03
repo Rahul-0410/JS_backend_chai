@@ -1,0 +1,38 @@
+<!-- setTimeout  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>chai aur code</h1>
+    <button id="stop">Stop</button>
+</body>
+<script>
+    //only once
+    function name() {
+        console.log('rahul');
+        
+    }
+    const changeText=()=>{
+        document.querySelector('h1').innerHTML="I am the best";
+    }
+    // setTimeout(()=>{
+    //     console.log("rahul");
+        
+    // },2000)
+    // setTimeout(name,2000);
+    const change=setTimeout(changeText,2000);
+
+    document.querySelector('#stop').addEventListener('click',()=>{
+        clearTimeout(change);
+        console.log("stopped");
+        
+    })
+
+   
+</script>
+</html>

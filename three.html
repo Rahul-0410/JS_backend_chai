@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body style="background-color: #212121; color: #fff;">
+    <ul class="language">
+        <li>Javascript</li>
+    </ul>
+</body>
+<script>
+    const parent=document.querySelector('.language')
+    function addElemnt(content){
+        const li=document.createElement('li');
+        li.innerText=content;
+        parent.appendChild(li);
+    }
+    // addElemnt("Java");
+    //optimal 
+    const addLi=(lang)=>{
+        const li=document.createElement('li');
+        li.appendChild(document.createTextNode(lang));
+        parent.appendChild(li);
+    }
+    addLi("C++");
+</script>
+</html>
