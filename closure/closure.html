@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Closure</title>
+</head>
+<body>
+    <button id="orange">Orange</button>
+    <button id="green">Green</button>
+</body>
+<script>
+    //lecical scope is when inner fn has acces of var and members of its parent or outer function
+    // function init() {
+    //     let name = "Mozilla"; // name is a local variable created by init
+    //     function displayName() {
+    //         // displayName() is the inner function, that forms a closure
+    //         console.log(name); // use variable declared in the parent function
+    //     }
+    //     displayName();
+    // }
+    // init();
+
+    //closure 
+    //so even after the outer is done executing but the lexical scope of the
+    //fn is still passed to the myFunc and hence we can use the count
+    // function outer(){
+    //     let count=0;
+
+    //     function inner(){
+    //         count++;
+    //         console.log(count);
+    //     }
+    //     return inner;
+    // }
+    // let myFunc=outer();
+    // myFunc(); //1
+    // myFunc(); //2
+    // myFunc(); //3
+    // myFunc(); //4
+
+
+    //button ke liye js
+    // document.getElementById('orange').addEventListener('click',()=>{
+    //     document.body.style.backgroundColor='orange';
+    // })
+    // document.getElementById('green').addEventListener('click',()=>{
+    //     document.body.style.backgroundColor='green';
+    // })
+
+    function clickehandler(color){
+        //if we don;t have another fn inside the color auto chnages as onlick
+        //executes the fn as it is getting fn()
+        // document.body.style.backgroundColor=`${color}`;
+     return function(){
+         document.body.style.backgroundColor=`${color}`;
+      }
+    }
+    document.getElementById('orange').onclick=clickehandler("orange");
+    document.getElementById('green').onclick=clickehandler("green");
+</script>
+</html>
