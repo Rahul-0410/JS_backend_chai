@@ -4,7 +4,7 @@ import {User} from "../models/user.models.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import { deleteCloudinary, uploadOnCloudinary } from "../utils/cloudnary.js"
+import { deleteCloudinary, deleteCloudinaryVideo, uploadOnCloudinary } from "../utils/cloudnary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -61,12 +61,18 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
+    // so populate helps us when we have a ref of other doc like in this case we have access of user in form of owner
+    // so using populate helps us to get the access to user's doc and we can select what data comes from doc like here only username
     const video=await Video.findById(videoId)
     .populate("owner","username")
     .exec();
 
     if(!video){
         new ApiError(500,"Something went wrong");
+    }
+    const user=req.user?._id.toString();
+    if(!video.isPublished && user!==video.owner._id.toString()){
+        throw new ApiError(403, "Unauthorized access to unpublished video");
     }
 
     return res.status(200).json(
@@ -121,11 +127,49 @@ const updateVideo = asyncHandler(async (req, res) => {
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
+    const video=await Video.findById(videoId);
+    if(!video){
+        throw new ApiError(404,"Video not found");
+    }
+    const user = req.user?._id?.toString();
+    if (user !== video.owner.toString()) {
+        throw new ApiError(403, "Unauthorized Access");
+    }
+    const vid=video.videoFile;
+    const thumbNail=video.thumbNail;
+    const del=await Video.findByIdAndDelete(videoId)
+    if(!del){
+        throw new ApiError(500,"Something went wrong");
+    }
+    await deleteCloudinaryVideo(vid);
+    await deleteCloudinary(thumbNail);
+
+    return res.status(200)
+    .json(new ApiResponse(200,{},"Video deleted successfully"));
+
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-})
+    const { videoId } = req.params;
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    const user = req.user?._id?.toString();
+    if (user !== video.owner.toString()) {
+        throw new ApiError(403, "Unauthorized Access");
+    }
+
+    video.isPublished = !video.isPublished;
+    await video.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, video, `Video is now ${video.isPublished ? 'Published' : 'Unpublished'}`)
+    );
+});
+
 
 export {
     getAllVideos,
