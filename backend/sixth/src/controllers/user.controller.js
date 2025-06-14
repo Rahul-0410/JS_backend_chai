@@ -1,10 +1,11 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
-import {uploadOnCloudinary} from '../utils/cloudnary.js'
+import {deleteCloudinary, uploadOnCloudinary} from '../utils/cloudnary.js'
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from 'jsonwebtoken';
 import mongoose from "mongoose";
+import { log } from "console";
 
 const generateAccessAndRefreshToken= async(userId)=>{
     try {
@@ -59,13 +60,13 @@ const registerUser= asyncHandler( async(req,res)=>{
     }
 
     //password validation
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{6,}$/;
-    if (!passwordRegex.test(password)) {
-        throw new ApiError(
-            400,
-            "Password must be at least 6 characters long and include uppercase, lowercase, and a number or special character"
-        );
-    }
+    // const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{6,}$/;
+    // if (!passwordRegex.test(password)) {
+    //     throw new ApiError(
+    //         400,
+    //         "Password must be at least 6 characters long and include uppercase, lowercase, and a number or special character"
+    //     );
+    // }
 
    const existedUser=await User.findOne({
         $or:[
@@ -233,7 +234,7 @@ const refreshAccessToken= asyncHandler(async (req,res)=>{
 const changeCurrentPassword=asyncHandler(async(req,res)=>{
     const{oldPassword,newPassword}=req.body;
 
-    const user= User.findById(req.user?._id);
+    const user= await User.findById(req.user?._id);
   const isPasswordCorrect= await user.isPasswordCorrect(oldPassword);
   if(!isPasswordCorrect){
     throw new ApiError(400,"invalid password");
@@ -251,7 +252,7 @@ const getCurrentUser=asyncHandler(async(req,res)=>{
 })
 
 const updateAccountDetails=asyncHandler(async(req,res)=>{
-    const {username,email}=req.body;
+    const {fullname,email}=req.body;
     if(!fullname || !email){
         throw new ApiError(400,"All fields are required");
     }
@@ -265,6 +266,7 @@ const updateAccountDetails=asyncHandler(async(req,res)=>{
         },
         {new:true}
     ).select("-password");
+ 
 
     return res
     .status(200)
@@ -276,10 +278,17 @@ const updateUserAvatar=asyncHandler(async(req,res)=>{
     if(!avaratLocalPath){
         throw new ApiError(400,"Avatar file is missing");
     }
+  
     const avatar=await uploadOnCloudinary(avaratLocalPath);
     if(!avatar.url){
         throw new ApiError(400,"error while uploading the avatar");
     }
+
+    //existing avatar lnk taken
+    const user1 = await User.findById(req.user?._id);
+    const oldAvatarPublicId = user1.avatar;
+    // console.log("oldAvatar: ",oldAvatarPublicId);
+
     const user=await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -289,20 +298,25 @@ const updateUserAvatar=asyncHandler(async(req,res)=>{
         },
         {new:true}
     ).select("-password")
-
+    if(oldAvatarPublicId){
+        await deleteCloudinary(oldAvatarPublicId);
+    }
+    
     return res.status(200)
     .json(new ApiResponse(200,user,"Avatar updated successfully"))
 })
 
 const updateUserCoverImage=asyncHandler(async(req,res)=>{
     const coverImageLocalPath=req.file?.path;
-    if(!coverImageLocalPathLocalPath){
+    if(!coverImageLocalPath){
         throw new ApiError(400,"cover image file is missing");
     }
     const coverImage=await uploadOnCloudinary(coverImageLocalPath);
     if(!coverImage.url){
         throw new ApiError(400,"error while uploading the coverImage");
     }
+    const user1=await User.findById(req.user?._id);
+    const oldCoverImage=user1?.coverImage;
     const user=await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -312,6 +326,9 @@ const updateUserCoverImage=asyncHandler(async(req,res)=>{
         },
         {new:true}
     ).select("-password")
+    if(oldCoverImage){
+        await deleteCloudinary(oldCoverImage);
+    }
 
     return res.status(200)
     .json(new ApiResponse(200,user,"coverImage updated successfully"))
