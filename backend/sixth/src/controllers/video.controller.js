@@ -4,7 +4,7 @@ import {User} from "../models/user.models.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import { uploadOnCloudinary } from "../utils/cloudnary.js"
+import { deleteCloudinary, uploadOnCloudinary } from "../utils/cloudnary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -61,12 +61,60 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
-    
+    const video=await Video.findById(videoId)
+    .populate("owner","username")
+    .exec();
+
+    if(!video){
+        new ApiError(500,"Something went wrong");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200,video,"Video fetched successfully")
+    );
+
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
+    const video=await Video.findById(videoId);
+    if(!video){
+        throw new ApiError(404, "Video not found");
+    }
+    const user=req.user?._id.toString();
+    if(user!==video.owner._id.toString()){
+        new ApiError(403,"Unauthorized Access");
+    }
+    const {title,description}=req.body;
+    if(!title || !description){
+        throw new ApiError(404, "Field data are required to go forward");
+    }
+    const oldthumbnail=video.thumbNail;
+    const thumbnailLocalpath=req.file?.path;
+    
+    const data={};
+    if(title) data.title=title;
+    if(description) data.description=description;
+    if(thumbnailLocalpath){
+       const thumbNail=await uploadOnCloudinary(thumbnailLocalpath);
+       data.thumbNail=thumbNail.url;
+    }
+    const updatedVideo=await Video.findByIdAndUpdate(videoId,data,{
+        new:true
+    });
+
+    if(!updateVideo){
+        throw new ApiError(500, "Something went wrong while updation")
+    }
+
+    if(updatedVideo && thumbnailLocalpath){
+        await deleteCloudinary(oldthumbnail);
+    }
+
+    return res.status(200)
+    .json(new ApiResponse(200,updatedVideo,"Video details updated"))
+
 
 })
 
