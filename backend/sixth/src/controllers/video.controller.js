@@ -8,8 +8,61 @@ import { deleteCloudinary, deleteCloudinaryVideo, uploadOnCloudinary } from "../
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+    let { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+    page=parseInt(page);
+    limit=parseInt(limit);
+    const skip=(page-1)*limit;
+
+    const searchFilter={};
+    //reges helps in partial string matcing
+    // options : i makes it case insensitive search
+    if(query){
+        searchFilter.$or=[
+            {title:{$regex: query, $options:"i"}},
+            {description:{$regex: query, $options:"i"}},
+        ]
+    }
+
+    if(userId && mongoose.Types.ObjectId.isValid(userId)){
+        searchFilter.owner=userId;
+    }
+
+    searchFilter.isPublished=true;
+    const sortOptions={};
+    sortOptions[sortBy]= sortType==="asc"? 1:-1;
+    //1 for asc and -1 for desc
+
+    //total count for pagination
+    const totalVideos=await Video.countDocuments(searchFilter);
+    if(!totalVideos){
+        new ApiError(500,"Something went wrong");
+    }
+
+    //fetch the paginated videos
+    const videos=await Video.find(searchFilter)
+    .populate("owner","username")
+    .sort(sortOptions)
+    .skip(skip)
+    .limit(limit)
+    .exec();
+
+    if(!videos){
+        new ApiError(404, "Video not found");
+    }
+
+    return res.status(200)
+    .json(new ApiResponse(
+        200,
+        {
+            total:totalVideos,
+            page,
+            limit,
+            videos
+        },
+        "Videos fetched successfully"
+    ));
+
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
