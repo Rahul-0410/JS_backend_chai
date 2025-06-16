@@ -22,7 +22,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         {
             $sort:{
-                 createdAt: -1
+                 createdAt: -1 // latest first
             }
         },{
             $skip:skip
@@ -78,7 +78,7 @@ const addComment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Something went wrong");
     }
 
-    return res.status(200)
+    return res.status(201)
         .json(new ApiResponse(200, comment, "Comment added successfully"));
 });
 
