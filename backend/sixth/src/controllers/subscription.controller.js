@@ -10,7 +10,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     const {channelId} = req.params
     // TODO: toggle subscription
       if (!mongoose.isValidObjectId(channelId)) {
-         throw new ApiError(400, "Invalid channel ID");
+         throw new ApiError(404, "Invalid channel ID");
     }
     const currUser=req.user?._id;
     if(currUser.toString()===channelId){

@@ -21,4 +21,17 @@ const likeSchema=new Schema({
 
 },{timestamps:true})
 
+likeSchema.pre("save", function (next) {
+  const count =
+    (this.video ? 1 : 0) +
+    (this.comment ? 1 : 0) +
+    (this.tweet ? 1 : 0);
+
+  if (count !== 1) {
+    return next(new Error("Exactly one of video, comment, or tweet must be set."));
+  }
+  next();
+});
+
+
 export const Like=model('Like',likeSchema);
