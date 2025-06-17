@@ -38,7 +38,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         },
         {
             $lookup:{
-                from:"uers",
+                from:"users",
                 localField:"owner",
                 foreignField:"_id",
                 as:"playListDetails"
@@ -48,7 +48,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
                 _id:1,
                 name:1,
                 description:1,
-                username:"$playListDetails.username"
+                username: { $arrayElemAt: ["$playListDetails.username", 0] }
             }
         }
     ]);
@@ -76,11 +76,42 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
     const {playlistId, videoId} = req.params
+    if (!mongoose.isValidObjectId(playlistId) || !mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid playlist or video ID");
+    }
+
+    const updatedPlaylist=await Playlist.findByIdAndUpdate(playlistId,{
+        $addToSet:{videos:videoId} //unique id stored only
+        //$push can be also used if duplicates are allowed
+    },
+    {new:true}
+)
+    if (!updatedPlaylist) {
+        throw new ApiError(404, "Playlist not found");
+    }
+
+    return res.status(200)
+    .json(new ApiResponse(200,updatedPlaylist,"Video added to playlist."))
 })
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     const {playlistId, videoId} = req.params
     // TODO: remove video from playlist
+    if (!mongoose.isValidObjectId(playlistId) || !mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid playlist or video ID");
+    }
+
+   const updatedPlaylist= await Playlist.findByIdAndUpdate(playlistId,{
+        $pull: { videos: videoId } // remove videoId from the array
+   },
+   {new:true}
+)
+     if (!updatedPlaylist) {
+        throw new ApiError(404,updatePlaylist, "Playlist not found");
+    }
+
+    return res.status(200)
+    .json(new ApiResponse(200,updatedPlaylist,"Video removed from playlist"));
 
 })
 
