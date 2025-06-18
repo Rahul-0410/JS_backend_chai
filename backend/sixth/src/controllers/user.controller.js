@@ -1,6 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
+import { View } from "../models/view.models.js"; 
+import { Video } from "../models/video.models.js";
 import {deleteCloudinary, uploadOnCloudinary} from '../utils/cloudnary.js'
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from 'jsonwebtoken';
@@ -405,6 +407,48 @@ const getUserChannelProfile=asyncHandler(async(req,res)=>{
     .json(new ApiResponse(200,channel[0],"User channel fetched successfully"));
 })
 
+const addVideoToWatchHistory=asyncHandler(async(req,res)=>{
+    const {videoId}=req.params;
+    if(!mongoose.isValidObjectId(videoId)){
+        throw new ApiError(404,"Video not found");
+    }
+    const user=req.user?._id;
+  const view= await View.create({
+        video:videoId,
+        viewdBy:user
+
+    })
+    // console.log(view);
+    const updatedVideo = await Video.findByIdAndUpdate(
+        videoId,
+        { $inc: { views: 1 } },
+        { new: true }
+    );
+    
+    const addVideo=await User.findByIdAndUpdate(user,{
+        $addToSet:{watchHistory:videoId}},
+        {new:true}
+    ).select("-password");;
+    if(!addVideo){
+        throw new ApiError(400,"Something went wrong");
+    }
+    return res.status(200)
+    .json(new ApiResponse(200,addVideo,"Video added to watchHistory"))
+})
+
+const removeVideoWatchHistory=asyncHandler(async(req,res)=>{
+    const {videoId}=req.params;
+    const user=req.user?._id;
+      if(!mongoose.isValidObjectId(videoId)){
+        throw new ApiError(404,"Video not found");
+    }
+    const removeVideo=await User.findByIdAndUpdate(user,{
+        $pull:{watchHistory:videoId}},
+        {new:true}).select("-password");
+    return res.status(200)
+    .json(new ApiResponse(200,removeVideo,"Removed video from history"))
+})
+
 const getWatchHistory=asyncHandler(async(req,res)=>{
        const user=await User.aggregate([
         {
@@ -456,5 +500,5 @@ export {
     registerUser, loginUser, logoutUser, refreshAccessToken,
     changeCurrentPassword, getCurrentUser, updateAccountDetails,
     updateUserAvatar, updateUserCoverImage, getUserChannelProfile,
-    getWatchHistory
+    getWatchHistory, addVideoToWatchHistory,removeVideoWatchHistory
 }
