@@ -130,9 +130,78 @@ const getLikedVideos = asyncHandler(async (req, res) => {
 ));
 })
 
+const getCommentLikes=asyncHandler(async(req,res)=>{
+    const user=req.user?._id;
+
+    const likedCommendt=await Like.aggregate([
+        {
+            $match:{
+                likedBy:new mongoose.Types.ObjectId(user),
+                comment:{$exists:true,$ne:null}
+            }
+        },{
+            $sort:{createdAt:-1}
+        },{
+            $lookup:{
+                from:"comments",
+                localField:"comment",
+                foreignField:"_id",
+                as:"commentDetails"
+            }
+        },{
+            $project:{
+                _id:1,
+                createdAt:1,
+                comment:"$commentDetails"
+            }
+        }
+    ])
+
+    return res.status(200)
+    .json(new ApiResponse(200,{
+        total:likedCommendt.length,
+        likedCommendt
+    },"Likes fetched"))
+})
+const getTweetLikes=asyncHandler(async(req,res)=>{
+    const user=req.user?._id;
+
+    const likedTweet=await Like.aggregate([
+        {
+            $match:{
+                likedBy:new mongoose.Types.ObjectId(user),
+                tweet:{$exists:true,$ne:null}
+            }
+        },{
+            $sort:{createdAt:-1}
+        },{
+            $lookup:{
+                from:"tweets",
+                localField:"tweet",
+                foreignField:"_id",
+                as:"tweetDetails"
+            }
+        },{
+            $project:{
+                _id:1,
+                createdAt:1,
+                comment:"$tweetDetails"
+            }
+        }
+    ])
+
+    return res.status(200)
+    .json(new ApiResponse(200,{
+        total:likedTweet.length,
+        likedTweet
+    },"Likes fetched"))
+})
+
 export {
     toggleCommentLike,
     toggleTweetLike,
     toggleVideoLike,
-    getLikedVideos
+    getLikedVideos,
+    getCommentLikes,
+    getTweetLikes
 }
